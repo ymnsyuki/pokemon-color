@@ -102,12 +102,12 @@ async function selectColor(c, el) {
     const grid = document.getElementById("grid");
 
     list.forEach(sp => {
-      const id = sp.pokemon_species.url.split("/").filter(Boolean).pop();
+      const id = sp.url.split("/").filter(Boolean).pop();
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
-        <img loading="lazy" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="${sp.pokemon_species.name}">
-        <div class="name">${sp.pokemon_species.name}</div>
+        <img loading="lazy" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="${sp.name}">
+        <div class="name">${sp.name}</div>
         <div class="id">No.${id}</div>`;
       grid.appendChild(card);
     });
