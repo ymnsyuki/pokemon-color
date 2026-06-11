@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>いろポケ - 色からポケモンをさがそう</title>
+<style>
+  :root { --bg:#f7f7fb; --card:#fff; --text:#222; --shadow:0 4px 14px rgba(0,0,0,.08); }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; font-family:system-ui,"Segoe UI","Hiragino Kaku Gothic ProN",sans-serif;
+    background:var(--bg); color:var(--text); padding:24px 16px 60px;
+  }
+  h1 { text-align:center; font-size:1.7rem; margin:.2em 0; }
+  .sub { text-align:center; color:#666; margin:0 0 24px; font-size:.9rem; }
+  .colors { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; max-width:720px; margin:0 auto 28px; }
+  .swatch {
+    width:64px; height:64px; border-radius:50%; cursor:pointer; border:3px solid #fff;
+    box-shadow:var(--shadow); transition:transform .12s, outline .12s; outline:3px solid transparent;
+    display:flex; align-items:flex-end; justify-content:center; padding-bottom:4px;
+    font-size:.62rem; color:#0008; font-weight:700;
+  }
+  .swatch:hover { transform:translateY(-4px) scale(1.06); }
+  .swatch.active { outline:3px solid #333; transform:scale(1.08); }
+  .grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:16px; max-width:960px; margin:0 auto;
+  }
+  .card {
+    background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:12px;
+    text-align:center; transition:transform .12s; animation:pop .25s ease;
+  }
+  .card:hover { transform:translateY(-4px); }
+  .card img { width:96px; height:96px; image-rendering:pixelated; }
+  .card .name { font-weight:700; text-transform:capitalize; margin-top:4px; font-size:.95rem; }
+  .card .id { color:#999; font-size:.75rem; }
+  @keyframes pop { from{opacity:0; transform:scale(.9);} to{opacity:1; transform:scale(1);} }
+  .status { text-align:center; color:#888; margin:30px 0; }
+  .spinner {
+    width:36px; height:36px; border:4px solid #ddd; border-top-color:#666;
+    border-radius:50%; animation:spin 1s linear infinite; margin:30px auto;
+  }
+  @keyframes spin { to{transform:rotate(360deg);} }
+  footer { text-align:center; color:#aaa; font-size:.75rem; margin-top:50px; }
+  footer a { color:#888; }
+</style>
+</head>
+<body>
+  <h1>🎨 いろポケ</h1>
+  <p class="sub">好きな色を選ぶと、その色のポケモンが出てくるよ</p>
+
+  <div class="colors" id="colors"></div>
+  <div id="content"></div>
+
+  <footer>
+    Data from <a href="https://pokeapi.co/" target="_blank" rel="noopener">PokeAPI</a>
+  </footer>
+
+<script>
+const COLORS = [
+  { en:"red",    ja:"あか",   hex:"#e74c3c" },
+  { en:"blue",   ja:"あお",   hex:"#3498db" },
+  { en:"yellow", ja:"きいろ", hex:"#f1c40f" },
+  { en:"green",  ja:"みどり", hex:"#2ecc71" },
+  { en:"black",  ja:"くろ",   hex:"#2c3e50" },
+  { en:"brown",  ja:"ちゃ",   hex:"#8e5a3b" },
+  { en:"purple", ja:"むらさき",hex:"#9b59b6" },
+  { en:"gray",   ja:"はい",   hex:"#95a5a6" },
+  { en:"white",  ja:"しろ",   hex:"#ecf0f1" },
+  { en:"pink",   ja:"ピンク", hex:"#fd79a8" },
+];
+
+const colorsEl  = document.getElementById("colors");
+const contentEl = document.getElementById("content");
+let activeEn = null;
+
+COLORS.forEach(c => {
+  const s = document.createElement("div");
+  s.className = "swatch";
+  s.style.background = c.hex;
+  s.title = c.ja;
+  s.textContent = c.ja;
+  if (c.en === "white") s.style.color = "#0009";
+  s.onclick = () => selectColor(c, s);
+  colorsEl.appendChild(s);
+});
+
+async function selectColor(c, el) {
+  if (activeEn === c.en) return;
+  activeEn = c.en;
+  document.querySelectorAll(".swatch").forEach(x => x.classList.remove("active"));
+  el.classList.add("active");
+  contentEl.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-color/${c.en}`);
+    if (!res.ok) throw new Error("fetch failed");
+    const data = await res.json();
+    const list = data.pokemon_species;
+
+    contentEl.innerHTML = `<p class="status">${c.ja}いポケモン：${list.length}匹</p><div class="grid" id="grid"></div>`;
+    const grid = document.getElementById("grid");
+
+    list.forEach(sp => {
+      const id = sp.pokemon_species.url.split("/").filter(Boolean).pop();
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <img loading="lazy" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="${sp.pokemon_species.name}">
+        <div class="name">${sp.pokemon_species.name}</div>
+        <div class="id">No.${id}</div>`;
+      grid.appendChild(card);
+    });
+  } catch (e) {
+    contentEl.innerHTML = '<p class="status">読み込みに失敗しました。通信環境を確認してもう一度お試しください。</p>';
+  }
+}
+</script>
+</body>
+</html>
